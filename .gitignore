@@ -2,6 +2,7 @@
 *.a
 *.d
 .depend
+.svn
 
 /config.h
 /config.mak
@@ -23,3 +24,4 @@
 /libvo/vdpau_template.c
 /libvo/vo_gl3_shaders.h
 /sub/osd_font.h
+
