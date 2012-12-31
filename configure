@@ -3001,6 +3001,33 @@ if test "$_w32threads" = auto ; then
 fi
 test "$_w32threads" = yes && def_threads='#define HAVE_THREADS 1'
 echores "$_w32threads"
+echocheck "direct.h"
+_direct_h=no
+header_check direct.h && _direct_h=yes
+if [ $_direct_h = yes ]; then
+  def_direct_h='#define HAVE_DIRECT_H 1'
+else
+  def_direct_h='#define HAVE_DIRECT_H 0'
+fi
+echores "$_direct_h"
+echocheck "io.h"
+_io_h=no
+header_check io.h && _io_h=yes
+if [ $_io_h = yes ]; then
+  def_io_h='#define HAVE_IO_H 1'
+else
+  def_io_h='#define HAVE_IO_H 0'
+fi
+echores "$_io_h"
+echocheck "windows.h"
+_windows_h=no
+header_check windows.h && _windows_h=yes
+if [ $_windows_h = yes ]; then
+  def_windows_h='#define HAVE_WINDOWS_H 1'
+else
+  def_windows_h='#define HAVE_WINDOWS_H 0'
+fi
+echores "$_windows_h"
 
 echocheck "rpath"
 if test "$_rpath" = yes ; then
@@ -5819,6 +5846,8 @@ $def_dvdcss
 /* system headers */
 $def_alloca_h
 $def_altivec_h
+$def_direct_h
+$def_io_h
 $def_malloc_h
 $def_mman_h
 $def_mman_has_map_failed
@@ -5828,6 +5857,7 @@ $def_sys_sysinfo_h
 $def_sys_videoio_h
 $def_termios_h
 $def_termios_sys_h
+$def_windows_h
 $def_winsock2_h
 
 
