@@ -45,11 +45,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#if defined(CONFIG_FONTCONFIG) && defined(_WIN32)
-#include <fontconfig/fontconfig.h>
-extern int FcDebugVal;
-#endif
-
 // #include <sys/mman.h>
 #include <sys/types.h>
 #ifndef __MINGW32__
@@ -2667,17 +2662,8 @@ int reinit_video_chain(struct MPContext *mpctx)
                 mp_msg(MSGT_CPLAYER, MSGL_ERR,
                        "ASS: cannot add video filter\n");
         }
-#if defined(CONFIG_FONTCONFIG) && defined(_WIN32)
-        /* force cache creation here and display fontconfig scan activity */
-        FcDebugVal = 128
-        FcConfigEnableHome(FcFalse);
-        FcInit();
-        FcDebugVal = 0;
-#endif
     }
 #endif
-
-
 
     sh_video->vfilter = append_filters(sh_video->vfilter, opts->vf_settings);
 
