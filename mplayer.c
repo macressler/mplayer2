@@ -2669,7 +2669,7 @@ int reinit_video_chain(struct MPContext *mpctx)
         }
 #if defined(CONFIG_FONTCONFIG) && defined(_WIN32)
         /* force cache creation here and display fontconfig scan activity */
-        FcDebugVal = 128
+        FcDebugVal = 128;
         FcConfigEnableHome(FcFalse);
         FcInit();
         FcDebugVal = 0;
