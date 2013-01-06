@@ -38,10 +38,10 @@
 #include <limits.h>
 #include "osdep/io.h"
 #if defined(__MINGW32__) || defined(__CYGWIN__)
-#include <windows.h>
 #if HAVE_WINSOCK2_H
 #include <winsock2.h>
 #endif
+#include <windows.h>
 #else
 #include <netdb.h>
 #include <sys/ioctl.h>
