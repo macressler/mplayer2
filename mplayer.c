@@ -21,6 +21,9 @@
 #include <stdbool.h>
 #include <math.h>
 #include <assert.h>
+#ifdef PTW32_STATIC_LIB
+#include <pthread.h>
+#endif
 
 #include <libavutil/intreadwrite.h>
 
@@ -1908,7 +1911,7 @@ void update_subtitles(struct MPContext *mpctx, double refpts_tl, bool reset)
     struct sh_video *sh_video = mpctx->sh_video;
     struct demux_stream *d_sub = mpctx->d_sub;
     double refpts_s = refpts_tl - mpctx->osd->sub_offset;
-    double curpts_s = refpts_s + sub_delay;
+    double curpts_s = refpts_s + opts->sub_delay;
     unsigned char *packet = NULL;
     int len;
     struct sh_sub *sh_sub = d_sub->sh;
@@ -2992,6 +2995,7 @@ void unpause_player(struct MPContext *mpctx)
 
 static int redraw_osd(struct MPContext *mpctx)
 {
+    struct MPOpts *opts = &mpctx->opts;
     struct sh_video *sh_video = mpctx->sh_video;
     struct vf_instance *vf = sh_video->vfilter;
     if (sh_video->output_flags & VFCAP_OSD_FILTER)
@@ -3000,7 +3004,7 @@ static int redraw_osd(struct MPContext *mpctx)
         return -1;
     mpctx->osd->sub_pts = mpctx->video_pts;
     if (mpctx->osd->sub_pts != MP_NOPTS_VALUE)
-        mpctx->osd->sub_pts += sub_delay - mpctx->osd->sub_offset;
+        mpctx->osd->sub_pts += opts->sub_delay - mpctx->osd->sub_offset;
 
     if (!(sh_video->output_flags & VFCAP_EOSD_FILTER))
         vf->control(vf, VFCTRL_DRAW_EOSD, mpctx->osd);
@@ -3197,10 +3201,11 @@ static int seek(MPContext *mpctx, struct seek_params seek,
     } else
         mpctx->last_seek_pts = MP_NOPTS_VALUE;
 
-    if (hr_seek) {
+    if (hr_seek || mpctx->timeline) {
         mpctx->hrseek_active = true;
         mpctx->hrseek_framedrop = true;
-        mpctx->hrseek_pts = seek.amount;
+        mpctx->hrseek_pts = hr_seek ? seek.amount
+                                 : mpctx->timeline[mpctx->timeline_part].start;
     }
 
     mpctx->start_timestamp = GetTimerMS();
@@ -3541,7 +3546,7 @@ static void run_playloop(struct MPContext *mpctx)
         struct vf_instance *vf = sh_video->vfilter;
         mpctx->osd->sub_pts = mpctx->video_pts;
         if (mpctx->osd->sub_pts != MP_NOPTS_VALUE)
-            mpctx->osd->sub_pts += sub_delay - mpctx->osd->sub_offset;
+            mpctx->osd->sub_pts += opts->sub_delay - mpctx->osd->sub_offset;
         vf->control(vf, VFCTRL_DRAW_EOSD, mpctx->osd);
         vf->control(vf, VFCTRL_DRAW_OSD, mpctx->osd);
         vo_osd_changed(0);
@@ -4971,6 +4976,8 @@ goto_next_file:  // don't jump here after ao/vo/getch initialization!
         current_module = "sub_free";
         for (i = 0; i < mpctx->set_of_sub_size; ++i) {
             sub_free(mpctx->set_of_subtitles[i]);
+            if (mpctx->set_of_ass_tracks[i])
+                sub_uninit(mpctx->set_of_ass_tracks[i]);
             talloc_free(mpctx->set_of_ass_tracks[i]);
         }
         mpctx->set_of_sub_size = 0;
