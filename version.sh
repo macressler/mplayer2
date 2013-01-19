@@ -16,13 +16,15 @@ test $version || version=$git_revision
 NEW_REVISION="#define VERSION \"${version}${extra}\""
 OLD_REVISION=$(head -n 1 version.h 2> /dev/null)
 BUILD_DATE="#define BUILD_DATE \"$(date)\""
-TITLE='#define MP_TITLE "%s "VERSION" (C) 2000-2012 MPlayer2 Team\nCustom build by Redxii, http://smplayer.sourceforge.net\nBuild date: "BUILD_DATE"\n\n"'
+LIBAV_VERSION="#define LIBAV_VERSION \"$(cat snapshot_libav 2> /dev/null)\""
+TITLE='#define MP_TITLE "%s "VERSION" (C) 2000-2013 MPlayer2 Team\nCustom build by Redxii, http://smplayer.sourceforge.net\nBuild date: "BUILD_DATE"\nCompiled against Libav version "LIBAV_VERSION"\n\n"'
 
 # Update version.h only on revision changes to avoid spurious rebuilds
 if test "$NEW_REVISION" != "$OLD_REVISION"; then
     cat <<EOF > version.h
 $NEW_REVISION
 $BUILD_DATE
+$LIBAV_VERSION
 $TITLE
 EOF
 fi
