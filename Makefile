@@ -58,10 +58,6 @@ SRCS_COMMON-$(DVDREAD_INTERNAL)      += libdvdread4/bitreader.c \
 SRCS_COMMON-$(FAAD)                  += libmpcodecs/ad_faad.c
 SRCS_COMMON-$(FASTMEMCPY)            += libvo/aclib.c
 
-# These filters use private headers and do not work with shared libavcodec.
-SRCS_COMMON-$(FFMPEG_INTERNALS)      += libmpcodecs/vf_mcdeint.c \
-                                        libmpcodecs/vf_spp.c \
-
 SRCS_COMMON-$(FTP)                   += stream/stream_ftp.c
 SRCS_COMMON-$(GIF)                   += libmpdemux/demux_gif.c
 SRCS_COMMON-$(HAVE_POSIX_SELECT)     += libmpcodecs/vf_bmovl.c
@@ -113,8 +109,7 @@ SRCS_COMMON-$(NEED_SHMEM)            += osdep/shmem.c
 SRCS_COMMON-$(NEED_STRSEP)           += osdep/strsep.c
 SRCS_COMMON-$(NEED_SWAB)             += osdep/swab.c
 SRCS_COMMON-$(NEED_VSSCANF)          += osdep/vsscanf.c
-SRCS_COMMON-$(NETWORKING)            += stream/stream_netstream.c \
-                                        stream/asf_mmst_streaming.c \
+SRCS_COMMON-$(NETWORKING)            += stream/asf_mmst_streaming.c \
                                         stream/asf_streaming.c \
                                         stream/cookies.c \
                                         stream/http.c \
@@ -145,7 +140,6 @@ SRCS_COMMON-$(TV_DSHOW)              += stream/tvi_dshow.c \
                                         loader/dshow/guids.c \
                                         loader/dshow/mediatype.c \
 
-SRCS_COMMON-$(TV_V4L1)               += stream/tvi_v4l.c  stream/audio_in.c
 SRCS_COMMON-$(TV_V4L2)               += stream/tvi_v4l2.c stream/audio_in.c
 SRCS_COMMON-$(UNRAR_EXEC)            += sub/unrar_exec.c
 SRCS_COMMON-$(VCD)                   += stream/stream_vcd.c
@@ -616,9 +610,6 @@ libmpdemux/ebml.o libmpdemux/demux_mkv.o: libmpdemux/ebml_types.h
 libmpdemux/ebml.o: libmpdemux/ebml_defs.c
 sub/osd_libass.o: sub/osd_font.h
 
-# Files that depend on libavcodec internals
-libmpcodecs/vf_fspp.o libmpcodecs/vf_mcdeint.o libmpcodecs/vf_spp.o: CFLAGS := -I$(FFMPEG_SOURCE_PATH) $(CFLAGS)
-
 osdep/mplayer-rc.o: osdep/mplayer.exe.manifest
 
 libdvdcss/%:   CFLAGS := -Ilibdvdcss -D_GNU_SOURCE -DVERSION=\"1.2.12\" $(CFLAGS_LIBDVDCSS) $(CFLAGS)
@@ -726,7 +717,7 @@ tests: $(addsuffix $(EXESUF),$(TESTS))
 testsclean:
 	-$(RM) $(call ADD_ALL_EXESUFS,$(TESTS))
 
-TOOLS = $(addprefix TOOLS/,alaw-gen asfinfo avi-fix avisubdump compare dump_mp4 movinfo netstream subrip vivodump)
+TOOLS = $(addprefix TOOLS/,alaw-gen asfinfo avi-fix avisubdump compare dump_mp4 movinfo subrip vivodump)
 
 ifdef ARCH_X86
 TOOLS += TOOLS/fastmemcpybench TOOLS/modify_reg
@@ -751,9 +742,8 @@ TOOLS/vfw2menc$(EXESUF): -lwinmm -lole32
 mplayer-nomain.o: mplayer.c
 	$(CC) $(CFLAGS) -DDISABLE_MAIN -c -o $@ $<
 
-TOOLS/netstream$(EXESUF): TOOLS/netstream.c
 TOOLS/vivodump$(EXESUF): TOOLS/vivodump.c
-TOOLS/netstream$(EXESUF) TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(OBJS_COMMON) $(COMMON_LIBS)
+TOOLS/vivodump$(EXESUF): $(subst mplayer.o,mplayer-nomain.o,$(OBJS_MPLAYER)) $(OBJS_COMMON) $(COMMON_LIBS)
 	$(CC) $(CFLAGS) -o $@ $^ $(EXTRALIBS_MPLAYER) $(EXTRALIBS)
 
 REAL_SRCS    = $(wildcard TOOLS/realcodecs/*.c)
