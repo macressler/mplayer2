@@ -475,8 +475,7 @@ ifo_handle_t *ifoOpenVTSI(dvd_reader_t *dvd, int title) {
     return NULL;
   }
 
-  ifoRead_VTS(ifofile);
-  if(ifofile->vtsi_mat)
+  if(ifoRead_VTS(ifofile) && ifofile->vtsi_mat)
     return ifofile;
 
   fprintf(stderr, "libdvdread: Invalid IFO for title %d (VTS_%02d_0.IFO).\n",
@@ -620,19 +619,19 @@ static int ifoRead_VTS(ifo_handle_t *ifofile) {
 
   if(!DVDFileSeek_(ifofile->file, 0)) {
     free(ifofile->vtsi_mat);
-    ifofile->vtsi_mat = 0;
+    ifofile->vtsi_mat = NULL;
     return 0;
   }
 
   if(!(DVDReadBytes(ifofile->file, vtsi_mat, sizeof(vtsi_mat_t)))) {
     free(ifofile->vtsi_mat);
-    ifofile->vtsi_mat = 0;
+    ifofile->vtsi_mat = NULL;
     return 0;
   }
 
   if(strncmp("DVDVIDEO-VTS", vtsi_mat->vts_identifier, 12) != 0) {
     free(ifofile->vtsi_mat);
-    ifofile->vtsi_mat = 0;
+    ifofile->vtsi_mat = NULL;
     return 0;
   }
 
@@ -1185,7 +1184,15 @@ int ifoRead_VTS_PTT_SRPT(ifo_handle_t *ifofile) {
     goto fail;
   }
   for(i = 0; i < vts_ptt_srpt->nr_of_srpts; i++) {
-    B2N_32(data[i]);
+    /* Transformers 3 has PTT start bytes that point outside the SRPT PTT */
+    uint32_t start = data[i];
+    B2N_32(start);
+    if(start + sizeof(ptt_info_t) > vts_ptt_srpt->last_byte + 1) {
+      /* don't mess with any bytes beyond the end of the allocation */
+      vts_ptt_srpt->nr_of_srpts = i;
+      break;
+    }
+    data[i] = start;
     /* assert(data[i] + sizeof(ptt_info_t) <= vts_ptt_srpt->last_byte + 1);
        Magic Knight Rayearth Daybreak is mastered very strange and has
        Titles with 0 PTTs. They all have a data[i] offsets beyond the end of
@@ -1374,6 +1381,7 @@ int ifoRead_PTL_MAIT(ifo_handle_t *ifofile) {
       ifofile->ptl_mait = NULL;
       return 0;
     }
+    memset(pf_temp, 0, info_length);
     if(!(DVDReadBytes(ifofile->file, pf_temp, info_length))) {
       fprintf(stderr, "libdvdread: Unable to read PTL_MAIT table at index %d.\n",i);
       free(pf_temp);
@@ -1436,6 +1444,7 @@ int ifoRead_VTS_TMAPT(ifo_handle_t *ifofile) {
 
   if(ifofile->vtsi_mat->vts_tmapt == 0) { /* optional(?) */
     ifofile->vts_tmapt = NULL;
+    fprintf(stderr,"libdvdread: No VTS_TMAPT available - skipping.\n");
     return 1;
   }
 

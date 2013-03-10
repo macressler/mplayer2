@@ -62,6 +62,9 @@ struct remap_s {
 
 static remap_t* remap_new( char *title) {
     remap_t *map = malloc( sizeof(remap_t));
+    if (map == NULL)
+	return NULL;
+
     map->title = strdup(title);
     map->maxblocks = 0;
     map->nblocks = 0;
@@ -139,8 +142,10 @@ static void remap_add_node( remap_t *map, block_t block) {
     } else {
         /* new block */
 	if (map->nblocks >= map->maxblocks) {
+	    if ((map->blocks = realloc( map->blocks, sizeof( block_t)*( map->maxblocks + 20))) == NULL)
+		return;
+
 	    map->maxblocks += 20;
-	    map->blocks = realloc( map->blocks, sizeof( block_t)*map->maxblocks);
 	}
 	n = map->nblocks++;
 	while (n > 0 && compare_block( &block, &map->blocks[ n-1]) < 0) {
@@ -155,10 +160,12 @@ static int parseblock(char *buf, int *dom, int *tt, int *pg,
 		      unsigned long *start, unsigned long *end) {
     long tmp;
     char *tok;
-    char *epos;
+    char *epos = NULL;
     char *marker[]={"domain", "title", "program", "start", "end"};
     int st = 0;
-    tok = strtok( buf, " ");
+    if ((tok = strtok( buf, " ")) == NULL)
+        return st;
+
     while (st < 5) {
         if (strcmp(tok, marker[st])) return -st-1000;
         tok = strtok( NULL, " ");
@@ -183,7 +190,7 @@ static int parseblock(char *buf, int *dom, int *tt, int *pg,
 		break;
 	}
 	st++;
-        tok = strtok( NULL, " ");
+        if (!(tok = strtok( NULL, " "))) return -st-2000;
     }
     return st;
 }
@@ -199,28 +206,12 @@ remap_t* remap_loadmap( char *title) {
 
     memset(&tmp, 0, sizeof(tmp));
     /* Build the map filename */
-#ifdef __MINGW32__
-    {
-        char exedir[MAX_PATH + 1];
-        if (GetModuleFileNameA(NULL, exedir, MAX_PATH) && (home = strrchr(exedir, '\\')))
-        {
-         *home = 0;
-            snprintf(fname, sizeof(fname) - 1, "%s\\dvdnav\\%s.map", exedir, title);
-        }
-        else
-        {
-            fprintf(MSG_OUT, "libdvdnav: Unable to find executable directory\n" );
-            return NULL;
-        }
-    }
-#else
     home = getenv("HOME");
     if(!home) {
-        fprintf(MSG_OUT, "libdvdnav: Unable to find home directory\n" );
+        fprintf(MSG_OUT, "libdvdnav: Unable to find home directory" );
         return NULL;
     }
     snprintf(fname, sizeof(fname), "%s/.dvdnav/%s.map", home, title);
-#endif
 
     /* Open the map file */
     fp = fopen( fname, "r");
@@ -230,7 +221,12 @@ remap_t* remap_loadmap( char *title) {
     }
 
     /* Load the map file */
-    map = remap_new( title);
+    if ((map = remap_new( title)) == NULL) {
+	fprintf(MSG_OUT, "libdvdnav: Unable to load map '%s'\n", title);
+        fclose(fp);
+	return NULL;
+    }
+
     while (fgets( buf, sizeof(buf), fp) != NULL) {
         if (buf[0] == '\n' || buf[0] == '#' || buf[0] == 0) continue;
         if (strncasecmp( buf, "debug", 5) == 0) {
